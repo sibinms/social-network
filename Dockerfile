@@ -16,5 +16,6 @@ COPY . .
 # Expose the port that Django's development server listens on
 EXPOSE 8000
 
-# Run Django development server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# Run the Django development server and apply migrations
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]

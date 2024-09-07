@@ -46,6 +46,14 @@ class EmailAuthTokenSerializer(serializers.Serializer):
 
 
 class EmailSignupSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(
+        label=_("First Name"),
+        write_only=True
+    )
+    last_name = serializers.CharField(
+        label=_("Last Name"),
+        write_only=True
+    )
     username = serializers.CharField(
         label=_("Email"),
         write_only=True,
@@ -62,14 +70,28 @@ class EmailSignupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username', 'password', 'password2']
+        fields = [
+            'username',
+            'password',
+            'password2',
+            'first_name',
+            'last_name'
+        ]
 
     def validate(self, attrs):
         # Check that passwords match
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Passwords must match."})
 
+        # Use username as email
+        attrs['email'] = attrs['username']
         return attrs
+
+    def validate_username(self, value):
+        # Check if user with this email already exists
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("User with this email already exists.")
+        return value
 
     def create(self, validated_data):
         # Remove password2 as it's not needed for creating the user
@@ -84,3 +106,9 @@ class EmailSignupSerializer(serializers.ModelSerializer):
             'username': user.username,
             'token': token.key
         }
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email']

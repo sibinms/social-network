@@ -1,12 +1,13 @@
 from django.contrib.auth.models import User
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status, generics
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .pagination import UserSearchPagination
 from .serializers import EmailAuthTokenSerializer, EmailSignupSerializer, UserSerializer
-from rest_framework.authtoken.views import ObtainAuthToken
 
 
 class EmailLoginAPIView(ObtainAuthToken):
@@ -39,7 +40,7 @@ class SearchUsersView(generics.ListAPIView):
             return User.objects.none()  # Return empty queryset if no keyword provided
 
         # Search for users by email or name
-        users_with_email_match = User.objects.filter(Q(username__iexact=keyword))
+        users_with_email_match = User.objects.filter(Q(email__iexact=keyword))
         if users_with_email_match.exists():
             return users_with_email_match
 
@@ -48,6 +49,16 @@ class SearchUsersView(generics.ListAPIView):
             Q(last_name__icontains=keyword)
         )
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name='q', type=str, description='Search query for user email or name', required=False),
+        ],
+        responses={
+            200: UserSerializer(many=True),
+            400: OpenApiParameter(name='error', type=str, description='Error message'),
+        },
+        description="Search for users by email or name. If no query parameter is provided, an empty list is returned."
+    )
     def get(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         page = self.paginate_queryset(queryset)

@@ -11,6 +11,7 @@ from connections.serializer import (
     CreateFriendRequestSerializer,
     UpdateFriendRequestSerializer,
 )
+from connections.throttling import FriendRequestThrottle
 from user_account.serializers import UserSerializer
 
 
@@ -20,6 +21,12 @@ class FriendRequestViewSet(viewsets.ViewSet):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = []
+
+    def get_throttles(self):
+        if self.action == 'create':
+            return [FriendRequestThrottle()]
+        return super().get_throttles()
 
     def get_object(self, pk):
         """
